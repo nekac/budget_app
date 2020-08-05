@@ -23,10 +23,21 @@ let budgetController = (() => {
       exp: 0,
       inc: 0,
     },
+    budget: 0,
+    percentage: -1, // not existing, can not be calculated
+  };
+
+  let calculateTotal = (type) => {
+    let sum = 0;
+
+    data.allItems[type].forEach((current) => {
+      sum += current.value;
+    });
+    data.totals[type] = sum;
   };
 
   return {
-    addItem: (type, desc, val) => {
+    addItemToTheStucture: (type, desc, val) => {
       let newItem;
 
       let id;
@@ -47,6 +58,27 @@ let budgetController = (() => {
 
       return newItem;
     },
+    calculateBudget: () => {
+      // calculate total income and expenses
+      calculateTotal("exp");
+      calculateTotal("inc");
+      // clalculate the budget
+      data.budget = data.totals.inc - data.totals.exp;
+      // calculate percentage of the income is spent
+      if (data.totals.inc > 0) {
+        data.percentage = Math.round((data.totals.exp / data.totals.inc) * 100);
+      } else {
+        data.percentage = -1; // non existing
+      }
+    },
+    getBudget: () => {
+      return {
+        budget: data.budget,
+        totalIncome: data.totals.inc,
+        totalExpences: data.totals.exp,
+        percentage: data.percentage,
+      };
+    },
   };
 })();
 
@@ -59,6 +91,10 @@ let UIController = (() => {
     inputButton: ".add__btn",
     incomeContainer: ".income__list",
     expensesContainer: ".expenses__list",
+    budgetLabel: ".budget__value",
+    incomeLabel: ".budget__income--value",
+    expensesLabel: ".budget__expenses--value",
+    percentageLabel: ".budget__expenses--percentage",
   };
 
   return {
@@ -66,7 +102,7 @@ let UIController = (() => {
       return {
         type: document.querySelector(DOMstrings.inputType).value, // inc or exp
         description: document.querySelector(DOMstrings.inputDescription).value,
-        value: document.querySelector(DOMstrings.inputValue).value,
+        value: parseFloat(document.querySelector(DOMstrings.inputValue).value),
       };
     },
 
@@ -107,6 +143,21 @@ let UIController = (() => {
       fieldsArray[0].focus();
     },
 
+    displayBudget: (obj) => {
+      document.querySelector(DOMstrings.budgetLabel).textContent = obj.budget;
+      document.querySelector(DOMstrings.incomeLabel).textContent =
+        obj.totalIncome;
+      document.querySelector(DOMstrings.expensesLabel).textContent =
+        obj.totalExpences;
+
+      if (obj.percentage > 0) {
+        document.querySelector(DOMstrings.percentageLabel).textContent =
+          obj.percentage + "%";
+      } else {
+        document.querySelector(DOMstrings.percentageLabel).textContent = "---";
+      }
+    },
+
     getDOMstrings: () => {
       // public access
       return DOMstrings;
@@ -128,31 +179,49 @@ let controller = ((budgetCtr, UICtr) => {
     });
   };
 
+  let updateBudget = () => {
+    // calculate the budget
+    budgetController.calculateBudget();
+    // display the budget on the UI
+    let budget = budgetController.getBudget();
+    // return the budget
+    UIController.displayBudget(budget);
+  };
+
   let addItem = () => {
     let input, newItem;
     // get the input data from the field
     input = UIController.getInput();
 
-    // add the item to the budget controller
-    newItem = budgetController.addItem(
-      input.type,
-      input.description,
-      input.value
-    );
+    // only if test is passed and data is there inside fields
+    if (input.description !== "" && !isNaN(input.value) && input.value > 0) {
+      // add the item to the budget controller
+      newItem = budgetController.addItemToTheStucture(
+        input.type,
+        input.description,
+        input.value
+      );
 
-    // add the item to the UI
-    UIController.addListItem(newItem, input.type);
+      // add the item to the UI
+      UIController.addListItem(newItem, input.type);
 
-    // clear fileds
-    UIController.clearFields();
+      // clear fileds
+      UIController.clearFields();
 
-    // calculate the budget
-    // display the budget on the UI
+      // caculcate and update the budget
+      updateBudget();
+    }
   };
 
   return {
     init: () => {
       console.log("Application has started!");
+      UIController.displayBudget({
+        budget: 0,
+        totalIncome: 0,
+        totalExpences: 0,
+        percentage: -1,
+      });
       setupEventListeners();
     },
   };
