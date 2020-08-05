@@ -1,6 +1,6 @@
 // calculation module controller, storing data, brain of the app
 let budgetController = (() => {
-  let Expense = (id, description, value) => {
+  let Expense = function (id, description, value) {
     // constructor for each expense that will be in app
     this.id = id;
     this.description = description;
@@ -57,6 +57,8 @@ let UIController = (() => {
     inputDescription: ".add__description",
     inputValue: ".add__value",
     inputButton: ".add__btn",
+    incomeContainer: ".income__list",
+    expensesContainer: ".expenses__list",
   };
 
   return {
@@ -67,6 +69,44 @@ let UIController = (() => {
         value: document.querySelector(DOMstrings.inputValue).value,
       };
     },
+
+    addListItem: (obj, type) => {
+      // create HTML string with placeholder
+      let html, newHtml, element;
+
+      if (type === "inc") {
+        element = DOMstrings.incomeContainer;
+        html =
+          '<div class="item clearfix" id="income-*id*"><div class="item__description">*description*</div><div class="right clearfix"><div class="item__value">*value*</div><div class="item__delete"><button class="item__delete--btn"><i class="ion-ios-close-outline"></i></button></div></div></div>';
+      } else if (type === "exp") {
+        element = DOMstrings.expensesContainer;
+        html =
+          '<div class="item clearfix" id="expense-*id*"><div class="item__description">*description*</div><div class="right clearfix"><div class="item__value">*value*</div><div class="item__percentage">21%</div><div class="item__delete"><button class="item__delete--btn"><i class="ion-ios-close-outline"></i></button></div></div></div>';
+      }
+      // replace placeholder with some real data, data received fron the object
+      newHtml = html.replace("*id*", obj.id);
+      newHtml = newHtml.replace("*description*", obj.description);
+      newHtml = newHtml.replace("*value*", obj.value);
+      // add that HTML to the DOM
+      document
+        .querySelector(element)
+        .insertAdjacentHTML("beforeBegin", newHtml);
+    },
+
+    clearFields: () => {
+      let fields, fieldsArray;
+      fields = document.querySelectorAll(
+        DOMstrings.inputDescription + ", " + DOMstrings.inputValue
+      );
+      fieldsArray = Array.prototype.slice.call(fields); // creating prototype array
+      fieldsArray.forEach((current, index, array) => {
+        // clear all fields
+        current.value = "";
+      });
+      // focus on the first element, first input field
+      fieldsArray[0].focus();
+    },
+
     getDOMstrings: () => {
       // public access
       return DOMstrings;
@@ -101,6 +141,11 @@ let controller = ((budgetCtr, UICtr) => {
     );
 
     // add the item to the UI
+    UIController.addListItem(newItem, input.type);
+
+    // clear fileds
+    UIController.clearFields();
+
     // calculate the budget
     // display the budget on the UI
   };
