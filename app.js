@@ -1,3 +1,7 @@
+/* ***
+BUDGET CONTROLLER
+*** */
+
 // calculation module controller, storing data, brain of the app
 let budgetController = (() => {
   let Expense = function (id, description, value) {
@@ -58,6 +62,18 @@ let budgetController = (() => {
 
       return newItem;
     },
+    deleteItem: (type, id) => {
+      let idElements;
+      idElements = data.allItems[type].map((current) => {
+        // new array
+        return current.id;
+      });
+      index = idElements.indexOf(id); // exact index number of the element
+
+      if (index !== -1) {
+        data.allItems[type].splice(index, 1);
+      }
+    },
     calculateBudget: () => {
       // calculate total income and expenses
       calculateTotal("exp");
@@ -82,6 +98,10 @@ let budgetController = (() => {
   };
 })();
 
+/* ***
+UI CONTROLLER
+*** */
+
 // view module controller that will update fields and views in the UI, manipulation with UI
 let UIController = (() => {
   let DOMstrings = {
@@ -95,6 +115,7 @@ let UIController = (() => {
     incomeLabel: ".budget__income--value",
     expensesLabel: ".budget__expenses--value",
     percentageLabel: ".budget__expenses--percentage",
+    container: ".container",
   };
 
   return {
@@ -113,11 +134,11 @@ let UIController = (() => {
       if (type === "inc") {
         element = DOMstrings.incomeContainer;
         html =
-          '<div class="item clearfix" id="income-*id*"><div class="item__description">*description*</div><div class="right clearfix"><div class="item__value">*value*</div><div class="item__delete"><button class="item__delete--btn"><i class="ion-ios-close-outline"></i></button></div></div></div>';
+          '<div class="item clearfix" id="inc-*id*"><div class="item__description">*description*</div><div class="right clearfix"><div class="item__value">*value*</div><div class="item__delete"><button class="item__delete--btn"><i class="ion-ios-close-outline"></i></button></div></div></div>';
       } else if (type === "exp") {
         element = DOMstrings.expensesContainer;
         html =
-          '<div class="item clearfix" id="expense-*id*"><div class="item__description">*description*</div><div class="right clearfix"><div class="item__value">*value*</div><div class="item__percentage">21%</div><div class="item__delete"><button class="item__delete--btn"><i class="ion-ios-close-outline"></i></button></div></div></div>';
+          '<div class="item clearfix" id="exp-*id*"><div class="item__description">*description*</div><div class="right clearfix"><div class="item__value">*value*</div><div class="item__percentage">21%</div><div class="item__delete"><button class="item__delete--btn"><i class="ion-ios-close-outline"></i></button></div></div></div>';
       }
       // replace placeholder with some real data, data received fron the object
       newHtml = html.replace("*id*", obj.id);
@@ -165,6 +186,10 @@ let UIController = (() => {
   };
 })();
 
+/* ***
+MAIN APP CONTROLLER
+*** */
+
 // global module controller , controling other two modules and use them in combination
 // APP CONTROLLER is the place where we use and tell other modules what to do
 let controller = ((budgetCtr, UICtr) => {
@@ -177,6 +202,8 @@ let controller = ((budgetCtr, UICtr) => {
         addItem();
       }
     });
+
+    document.querySelector(DOM.container).addEventListener("click", deleteItem);
   };
 
   let updateBudget = () => {
@@ -201,15 +228,28 @@ let controller = ((budgetCtr, UICtr) => {
         input.description,
         input.value
       );
-
       // add the item to the UI
       UIController.addListItem(newItem, input.type);
-
       // clear fileds
       UIController.clearFields();
-
       // caculcate and update the budget
       updateBudget();
+    }
+  };
+
+  let deleteItem = (event) => {
+    let itemId, splitId, type, id;
+    itemId = event.target.parentNode.parentNode.parentNode.parentNode.id;
+
+    if (itemId) {
+      splitId = itemId.split("-"); // array of 1st element before dash and 2nd is after the dash
+      type = splitId[0];
+      id = parseInd(splitId[1]);
+
+      // delete item from the structure
+      budgetController.deleteItem(type, id);
+      // delete item from the UI
+      // update and show the new budget
     }
   };
 
@@ -227,5 +267,5 @@ let controller = ((budgetCtr, UICtr) => {
   };
 })(budgetController, UIController);
 
-// starting app
+// ==> starting app
 controller.init();
